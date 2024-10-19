@@ -1,7 +1,7 @@
 import { useReactiveClient } from "@dynamic-labs/react-hooks";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useState } from "react";
-import { Button, StyleSheet, View } from "react-native";
+import { Button, Image, StyleSheet, Text, View } from "react-native";
 import { TextDecoder } from "text-encoding";
 import { dynamicClient, publicClient, publicViemClient } from "./src/client";
 import { normalize } from "viem/ens";
@@ -14,6 +14,8 @@ export default function App() {
   const { wallets } = useReactiveClient(dynamicClient);
 
   const [isShaking, setIsShaking] = useState(false);
+  const [avatar, setAvatar] = useState("");
+  const [name, setName] = useState("");
 
   useEffect(() => {
     const subscription = Accelerometer.addListener(
@@ -29,10 +31,14 @@ export default function App() {
           try {
             const ensName = await publicClient.getEnsName({ address });
             if (ensName) {
+              setName(ensName);
               const ensAvatar = await publicClient.getEnsAvatar({
                 name: normalize(ensName),
               });
-              console.log(ensName, ensAvatar);
+              if (ensAvatar) {
+                setAvatar(ensAvatar);
+                console.log(ensAvatar);
+              }
             }
           } catch (e) {
             console.log(e);
@@ -52,7 +58,16 @@ export default function App() {
   return (
     <View style={styles.container}>
       <dynamicClient.reactNative.WebView />
-      <Button title="Show modal" onPress={() => dynamicClient.ui.auth.show()} />
+      <Image src={avatar} />
+      <Text>{name}</Text>
+      <Button
+        title="Login/logout"
+        onPress={async () => {
+          console.log("show modal");
+          await dynamicClient.ui.auth.show();
+          console.log("showed");
+        }}
+      />
     </View>
   );
 }

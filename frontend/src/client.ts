@@ -1,7 +1,7 @@
 import { createClient } from "@dynamic-labs/client";
 import { ReactNativeExtension } from "@dynamic-labs/react-native-extension";
 import { ViemExtension } from "@dynamic-labs/viem-extension";
-import { mainnet, sepolia } from "viem/chains";
+import { mainnet, polygon, sepolia } from "viem/chains";
 import { createPublicClient, http } from "viem";
 
 export const dynamicClient = createClient({
