@@ -1,25 +1,50 @@
+import { useReactiveClient } from "@dynamic-labs/react-hooks";
 import { Accelerometer } from "expo-sensors";
 import { useEffect, useState } from "react";
 import { Button, StyleSheet, View } from "react-native";
-import { dynamicClient } from "./src/client";
+import { TextDecoder } from "text-encoding";
+import { dynamicClient, publicClient, publicViemClient } from "./src/client";
+import { normalize } from "viem/ens";
+
+if (typeof global.TextDecoder === "undefined") {
+  global.TextDecoder = TextDecoder;
+}
 
 export default function App() {
+  const { wallets } = useReactiveClient(dynamicClient);
+
   const [isShaking, setIsShaking] = useState(false);
 
   useEffect(() => {
-    const subscription = Accelerometer.addListener((accelerometerData) => {
-      const { x, y, z } = accelerometerData;
-      const acceleration = Math.sqrt(x * x + y * y + z * z);
+    const subscription = Accelerometer.addListener(
+      async (accelerometerData) => {
+        const { x, y, z } = accelerometerData;
+        const acceleration = Math.sqrt(x * x + y * y + z * z);
 
-      if (acceleration > 5 && !isShaking) {
-        console.log("start shake");
-        setIsShaking(true);
-        setTimeout(() => {
-          console.log("endshake");
-          setIsShaking(false);
-        }, 500);
+        if (acceleration > 5 && !isShaking) {
+          setIsShaking(true);
+          console.log("getting balance...");
+          const address = wallets.userWallets[0].address as `0x${string}`;
+          console.log(address);
+          try {
+            const ensName = await publicClient.getEnsName({ address });
+            if (ensName) {
+              const ensAvatar = await publicClient.getEnsAvatar({
+                name: normalize(ensName),
+              });
+              console.log(ensName, ensAvatar);
+            }
+          } catch (e) {
+            console.log(e);
+          }
+
+          setTimeout(() => {
+            console.log("endshake");
+            setIsShaking(false);
+          }, 500);
+        }
       }
-    });
+    );
 
     return () => subscription.remove();
   }, [isShaking]);
