@@ -35,7 +35,8 @@
     "socket.io-client": "^4.8.0",
     "text-encoding": "^0.7.0",
     "viem": "^2.21.29",
-    "wagmi": "^2.12.20"
+    "wagmi": "^2.12.20",
+    "expo-sharing": "~12.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

@@ -1,4 +1,5 @@
-import { Button, Image, Text, TouchableOpacity, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
+import * as Sharing from "expo-sharing";
 
 type Props = {
   userEns: string;
@@ -54,27 +55,61 @@ export default function PendingModal({
           <Text style={{ textAlign: "center", paddingVertical: 12 }}>
             {imageDescription}
           </Text>
-          <TouchableOpacity
-            style={{ position: "absolute", width: "50%", bottom: 0 }}
-            onPress={onDone}
+          <View
+            style={{
+              flexDirection: "row",
+              width: "100%",
+              position: "absolute",
+              bottom: 0,
+            }}
           >
-            <View
-              style={{
-                width: "100%",
-                height: 40,
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "#f9e7a2",
-                borderRadius: 20,
+            <TouchableOpacity
+              style={{ width: "45%", marginRight: 24 }}
+              onPress={onDone}
+            >
+              <View
+                style={{
+                  width: "100%",
+                  height: 40,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#f9e7a2",
+                  borderRadius: 20,
+                }}
+              >
+                <Text
+                  style={{ fontSize: 16, fontWeight: "600", color: "#645e4e" }}
+                >
+                  Done
+                </Text>
+              </View>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={{ width: "45%" }}
+              onPress={() => {
+                Sharing.shareAsync(imageUrl);
               }}
             >
-              <Text
-                style={{ fontSize: 16, fontWeight: "600", color: "#645e4e" }}
+              <View
+                style={{
+                  borderColor: "#645e4e",
+                  borderWidth: 2,
+                  width: "100%",
+                  height: 40,
+                  alignItems: "center",
+                  justifyContent: "center",
+                  backgroundColor: "#",
+                  borderRadius: 20,
+                }}
               >
-                Done
-              </Text>
-            </View>
-          </TouchableOpacity>
+                <Text
+                  style={{ fontSize: 16, fontWeight: "600", color: "#645e4e" }}
+                >
+                  Share
+                </Text>
+              </View>
+            </TouchableOpacity>
+          </View>
         </>
       ) : (
         <>
