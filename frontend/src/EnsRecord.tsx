@@ -6,9 +6,11 @@ import { useEffect, useState } from "react";
 
 type Props = {
   address: `0x${string}`;
+  setAppEnsName: (ensName: string) => void;
 };
 
-export default function EnsRecord({ address }: Props) {
+export default function EnsRecord({ address, setAppEnsName }: Props) {
+  console.log(address);
   const [ensName, setEnsName] = useState("");
   const [ensAvatar, setEnsAvatar] = useState("");
   const [ensDescription, setEnsDescription] = useState("");
@@ -17,8 +19,10 @@ export default function EnsRecord({ address }: Props) {
   useEffect(() => {
     const getEnsData = async () => {
       const name = await publicClient.getEnsName({ address });
+      console.log(name);
       if (name) {
         setEnsName(normalize(name));
+        setAppEnsName(normalize(name));
         const avatar = await publicClient.getEnsAvatar({ name });
         if (avatar) {
           setEnsAvatar(avatar);
@@ -46,7 +50,12 @@ export default function EnsRecord({ address }: Props) {
 
   return (
     <View>
-      <Image source={{ uri: ensAvatar ?? "" }} width={50} height={50} />
+      <Image
+        source={{ uri: ensAvatar ?? "" }}
+        width={50}
+        height={50}
+        borderRadius={25}
+      />
       <Text>{ensName}</Text>
       <Text>Description: {ensDescription}</Text>
       <Text>Twitter: {ensTwitter}</Text>
