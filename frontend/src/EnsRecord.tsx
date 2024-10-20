@@ -14,16 +14,12 @@ export default function EnsRecord({
   setAppEnsName,
   setAppEnsAvatar,
 }: Props) {
-  console.log(address);
   const [ensName, setEnsName] = useState("");
   const [ensAvatar, setEnsAvatar] = useState("");
-  const [ensDescription, setEnsDescription] = useState("");
-  const [ensTwitter, setEnsTwitter] = useState("");
 
   useEffect(() => {
     const getEnsData = async () => {
       const name = await publicClient.getEnsName({ address });
-      console.log(name);
       if (name) {
         setEnsName(normalize(name));
         setAppEnsName(normalize(name));
@@ -31,22 +27,6 @@ export default function EnsRecord({
         if (avatar) {
           setEnsAvatar(avatar);
           setAppEnsAvatar(avatar);
-        }
-        const description = await publicClient.getEnsText({
-          name,
-          key: "description",
-        });
-        console.log(description);
-        if (description) {
-          setEnsDescription(description);
-        }
-        const twitter = await publicClient.getEnsText({
-          name,
-          key: "com.twitter",
-        });
-        console.log(twitter);
-        if (twitter) {
-          setEnsTwitter(twitter);
         }
       }
     };
@@ -58,7 +38,12 @@ export default function EnsRecord({
       <TouchableOpacity onPress={() => dynamicClient.ui.auth.show()}>
         <Image
           style={{ borderColor: "#b2ab99", borderWidth: 3 }}
-          source={{ uri: ensAvatar ?? require("../assets/default_avatar.jpg") }}
+          source={{
+            uri:
+              ensAvatar.length > 0
+                ? ensAvatar
+                : "https://cdn.discordapp.com/attachments/727516060487516170/1297541115095814154/ethereum-name-service-ens-logo-9190A647F5-seeklogo.png?ex=67164cd4&is=6714fb54&hm=baa70750419f58f0bb55a3b9f10d008a26fda44a017970263a47bca4574f1ff5&",
+          }}
           width={50}
           height={50}
           borderRadius={25}

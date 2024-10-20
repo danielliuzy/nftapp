@@ -5,6 +5,7 @@ import OpenAI from "openai";
 import axios from "axios";
 import fetch from "node-fetch";
 import { writeFileSync } from "fs";
+import Moralis from "moralis";
 
 config();
 const SMART_CONTRACT_NETWORK = "polygon-amoy";
@@ -38,6 +39,41 @@ const getImageBuffer = async (imageUrl) => {
   const buffer = await response.arrayBuffer();
   return buffer;
 };
+await Moralis.start({
+  apiKey: process.env.MORALIS_API_KEY,
+});
+
+const fetchNFTMetadata = async () => {
+  try {
+    const response1 = await Moralis.EvmApi.nft.getNFTCollectionStats({
+      chain: "0x13882",
+      address: process.env.SMART_CONTRACT_ADDRESS,
+    });
+    const total_tokens = response1.raw.total_tokens;
+
+    const tokenIds = [];
+    for (let i = 0; i < Math.min(total_tokens - 1, 25); i++) {
+      const tokenId = total_tokens - i;
+      tokenIds.push(tokenId.toString());
+    }
+
+    const tokens = tokenIds.map((tokenId) => ({
+      tokenAddress: process.env.SMART_CONTRACT_ADDRESS,
+      tokenId,
+    }));
+    const response = await Moralis.EvmApi.nft.getMultipleNFTs({
+      chain: "0x13882", // Ethereum mainnet
+      tokens,
+    });
+
+    // Log the metadata for each token
+    console.log(response.raw);
+    return response.raw;
+  } catch (e) {
+    // Handle any errors
+    console.error(e);
+  }
+};
 
 const getTimeOfDay = (hours) => {
   let timeOfDay = "";
@@ -61,6 +97,10 @@ const options = {
 const geocoder = NodeGeocoder(options);
 
 io.on("connection", (socket) => {
+  socket.on("fetch-tokens", async () => {
+    const metadata = await fetchNFTMetadata();
+    socket.emit("token-metadata", metadata);
+  });
   socket.on("shake", (ens, avatar, address, location) => {
     pendingEns = ens;
     pendingAvatar = avatar;

@@ -129,6 +129,7 @@ export default function PendingModal({
           <TouchableOpacity
             style={{ position: "absolute", width: "100%", bottom: 0 }}
             onPress={onMakeMemory}
+            disabled={isLoading}
           >
             <View
               style={{
