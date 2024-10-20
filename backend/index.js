@@ -1,4 +1,6 @@
 import { Server } from "socket.io";
+import NodeGeocoder from "node-geocoder";
+import { config } from "dotenv";
 
 const io = new Server(3000);
 
@@ -7,6 +9,15 @@ let pendingAvatar = "";
 let pendingLocation = { latitude: 0, longitude: 0 };
 let shakeResponseLocations = [];
 let pendingSockets = new Map();
+
+config();
+
+const options = {
+  provider: "google", // Choose your preferred provider (e.g., Google, Mapbox, etc.)
+  apiKey: process.env.PLACES_API_KEY,
+};
+
+const geocoder = NodeGeocoder(options);
 
 io.on("connection", (socket) => {
   socket.on("shake", (ens, avatar, location) => {
@@ -68,11 +79,20 @@ io.on("connection", (socket) => {
       });
   });
 
-  socket.on("make-memory", (ens1, avatar1, ens2, avatar2, location) => {
+  socket.on("make-memory", async (ens1, avatar1, ens2, avatar2, location) => {
     // ens 1 is owner;
     delete pendingSockets[ens1];
 
     io.to(pendingSockets[ens2]).emit("pending-end");
     delete pendingSockets[ens2];
+
+    const lat = location.latitude;
+    const lon = location.longitude;
+
+    // get description of avatar1
+    // get description of avatar2
+    // get location/landmark
+    // generate image based on the 3 things above
+    const [{ city, country }] = await geocoder.reverse({ lat, lon });
   });
 });
