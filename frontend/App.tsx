@@ -22,6 +22,7 @@ export default function App() {
   const [pendingCreate, setPendingCreate] = useState(false);
   const [pendingEns, setPendingEns] = useState("");
   const [pendingAvatar, setPendingAvatar] = useState("");
+  const [pendingAddress, setPendingAddress] = useState("");
 
   useEffect(() => {
     const handlePendingLocation = async (
@@ -30,6 +31,7 @@ export default function App() {
         location: Location.LocationObjectCoords;
         ens: string;
         avatar: string;
+        address: string;
       }) => void
     ) => {
       if (appEnsName.length > 0 && appEnsAvatar.length > 0) {
@@ -47,6 +49,7 @@ export default function App() {
           location: location.coords,
           ens: appEnsName,
           avatar: appEnsAvatar,
+          address: wallets.userWallets[0].address,
         });
       }
     };
@@ -56,19 +59,39 @@ export default function App() {
     return () => {
       socketClient.off("pending-location", handlePendingLocation);
     };
-  }, [appEnsName, appEnsAvatar]);
+  }, [appEnsName, appEnsAvatar, wallets]);
 
   useEffect(() => {
-    const handleExchangeEns = async (data: { ens: string; avatar: string }) => {
+    const handleExchangeEns = async (data: {
+      ens: string;
+      avatar: string;
+      address: string;
+    }) => {
       setPendingCreate(true);
       setPendingEns(data.ens);
       setPendingAvatar(data.avatar);
+      setPendingAddress(data.address);
     };
 
     socketClient.on("exchange-ens", handleExchangeEns);
 
     return () => {
       socketClient.off("exchange-ens", handleExchangeEns);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handlePendingEnd = () => {
+      setPendingCreate(false);
+      setPendingEns("");
+      setPendingAvatar("");
+      setPendingAddress("");
+    };
+
+    socketClient.on("pending-end", handlePendingEnd);
+
+    return () => {
+      socketClient.off("pending-end", handlePendingEnd);
     };
   }, []);
 
@@ -94,6 +117,7 @@ export default function App() {
               "shake",
               appEnsName,
               appEnsAvatar,
+              wallets.userWallets[0].address,
               location.coords
             );
             setTimeout(() => {
@@ -117,9 +141,24 @@ export default function App() {
           userAvatar={appEnsAvatar}
           pendingEns={pendingEns}
           pendingAvatar={pendingAvatar}
-          onMakeMemory={() => {
+          onMakeMemory={async () => {
+            const location = await Location.getCurrentPositionAsync({
+              accuracy: Location.Accuracy.Balanced,
+            });
+            socketClient.emit(
+              "make-memory",
+              appEnsName,
+              appEnsAvatar,
+              wallets.userWallets[0].address,
+              pendingEns,
+              pendingAvatar,
+              pendingAddress,
+              location.coords
+            );
             setPendingCreate(false);
             setPendingEns("");
+            setPendingAvatar("");
+            setPendingAddress("");
           }}
         />
       )}
