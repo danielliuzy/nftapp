@@ -124,12 +124,7 @@ io.on("connection", (socket) => {
   socket.on(
     "make-memory",
     async (ens1, avatar1, address1, ens2, avatar2, address2, location) => {
-      // ens 1 is owner;
-      delete pendingSockets[ens1];
-
-      io.to(pendingSockets[ens2]).emit("pending-end");
-      delete pendingSockets[ens2];
-
+      io.to(pendingSockets[ens2]).emit("mint-start");
       const lat = location.latitude;
       const lon = location.longitude;
 
@@ -194,6 +189,13 @@ io.on("connection", (socket) => {
         size: "1024x1024",
       });
       const imageUrl = imageResponse.data[0].url;
+      const description = `To remember ${ens1} and ${ens2}'s meeting in ${locale} on ${weather.data.location.localtime}`;
+      // ens 1 is owner;
+      io.to(pendingSockets[ens1]).emit("pending-end", imageUrl, description);
+      delete pendingSockets[ens1];
+
+      io.to(pendingSockets[ens2]).emit("pending-end", imageUrl, description);
+      delete pendingSockets[ens2];
       const buffer = await getImageBuffer(imageUrl);
       writeFileSync("output.png", new Buffer.from(buffer));
       let data = new FormData();
@@ -213,7 +215,7 @@ io.on("connection", (socket) => {
         const name = `NFTap ${ens1} ${ens2} Memory`;
         const metadataJson = {
           name,
-          description: `To remember ${ens1} and ${ens2}'s meeting in ${locale} on ${weather.data.location.localtime}`,
+          description,
           image: `https://ipfs.io/ipfs/${imgCid}`,
         };
         const ipfsMetadata = await starton.post("/ipfs/json", {

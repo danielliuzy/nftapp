@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import { Image, Text, View } from "react-native";
+import { Image, Text, TouchableOpacity, View } from "react-native";
 import { normalize } from "viem/ens";
-import { publicClient } from "./client";
+import { dynamicClient, publicClient } from "./client";
 
 type Props = {
   address: `0x${string}`;
@@ -54,16 +54,19 @@ export default function EnsRecord({
   }, [address]);
 
   return (
-    <View>
-      <Image
-        source={{ uri: ensAvatar ?? "" }}
-        width={50}
-        height={50}
-        borderRadius={25}
-      />
-      <Text>{ensName}</Text>
+    <View style={{ position: "absolute", top: 0, left: 20 }}>
+      <TouchableOpacity onPress={() => dynamicClient.ui.auth.show()}>
+        <Image
+          style={{ borderColor: "#b2ab99", borderWidth: 3 }}
+          source={{ uri: ensAvatar ?? require("../assets/default_avatar.jpg") }}
+          width={50}
+          height={50}
+          borderRadius={25}
+        />
+      </TouchableOpacity>
+      {/* <Text>{ensName}</Text>
       <Text>Description: {ensDescription}</Text>
-      <Text>Twitter: {ensTwitter}</Text>
+      <Text>Twitter: {ensTwitter}</Text> */}
     </View>
   );
 }

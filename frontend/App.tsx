@@ -1,12 +1,15 @@
 import { useReactiveClient } from "@dynamic-labs/react-hooks";
-import { Accelerometer } from "expo-sensors";
-import { useEffect, useState } from "react";
-import { Button, StyleSheet, View, Text, Image } from "react-native";
+import {
+  Image,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { TextDecoder } from "text-encoding";
-import { dynamicClient, socketClient } from "./src/client";
-import EnsRecord from "./src/EnsRecord";
-import * as Location from "expo-location";
-import PendingModal from "./src/PendingModal";
+import { dynamicClient } from "./src/client";
+import HomeScreen from "./src/HomeScreen";
 
 if (typeof global.TextDecoder === "undefined") {
   global.TextDecoder = TextDecoder;
@@ -14,170 +17,35 @@ if (typeof global.TextDecoder === "undefined") {
 
 export default function App() {
   const { wallets } = useReactiveClient(dynamicClient);
-
-  const [isShaking, setIsShaking] = useState(false);
-  const [appEnsName, setAppEnsName] = useState("");
-  const [appEnsAvatar, setAppEnsAvatar] = useState("");
-
-  const [pendingCreate, setPendingCreate] = useState(false);
-  const [pendingEns, setPendingEns] = useState("");
-  const [pendingAvatar, setPendingAvatar] = useState("");
-  const [pendingAddress, setPendingAddress] = useState("");
-
-  useEffect(() => {
-    const handlePendingLocation = async (
-      callback: (response: {
-        id: string;
-        location: Location.LocationObjectCoords;
-        ens: string;
-        avatar: string;
-        address: string;
-      }) => void
-    ) => {
-      if (appEnsName.length > 0 && appEnsAvatar.length > 0) {
-        let { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== "granted") {
-          return;
-        }
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
-        console.log(location.coords);
-        console.log(callback);
-        callback({
-          id: socketClient.id!,
-          location: location.coords,
-          ens: appEnsName,
-          avatar: appEnsAvatar,
-          address: wallets.userWallets[0].address,
-        });
-      }
-    };
-
-    socketClient.on("pending-location", handlePendingLocation);
-
-    return () => {
-      socketClient.off("pending-location", handlePendingLocation);
-    };
-  }, [appEnsName, appEnsAvatar, wallets]);
-
-  useEffect(() => {
-    const handleExchangeEns = async (data: {
-      ens: string;
-      avatar: string;
-      address: string;
-    }) => {
-      setPendingCreate(true);
-      setPendingEns(data.ens);
-      setPendingAvatar(data.avatar);
-      setPendingAddress(data.address);
-    };
-
-    socketClient.on("exchange-ens", handleExchangeEns);
-
-    return () => {
-      socketClient.off("exchange-ens", handleExchangeEns);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handlePendingEnd = () => {
-      setPendingCreate(false);
-      setPendingEns("");
-      setPendingAvatar("");
-      setPendingAddress("");
-    };
-
-    socketClient.on("pending-end", handlePendingEnd);
-
-    return () => {
-      socketClient.off("pending-end", handlePendingEnd);
-    };
-  }, []);
-
-  useEffect(() => {
-    const subscription = Accelerometer.addListener(
-      async (accelerometerData) => {
-        if (appEnsName.length > 0 && appEnsAvatar.length > 0) {
-          const { x, y, z } = accelerometerData;
-          const acceleration = Math.sqrt(x * x + y * y + z * z);
-
-          if (acceleration > 5 && !isShaking) {
-            setIsShaking(true);
-            console.log("send location and ens to server");
-            let { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== "granted") {
-              return;
-            }
-            const location = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            });
-            console.log(location.coords);
-            socketClient.emit(
-              "shake",
-              appEnsName,
-              appEnsAvatar,
-              wallets.userWallets[0].address,
-              location.coords
-            );
-            setTimeout(() => {
-              console.log("endshake");
-              setIsShaking(false);
-            }, 500);
-          }
-        }
-      }
-    );
-
-    return () => subscription.remove();
-  }, [isShaking, appEnsName, appEnsAvatar]);
-
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <dynamicClient.reactNative.WebView />
-      {pendingCreate && (
-        <PendingModal
-          userEns={appEnsName}
-          userAvatar={appEnsAvatar}
-          pendingEns={pendingEns}
-          pendingAvatar={pendingAvatar}
-          onMakeMemory={async () => {
-            const location = await Location.getCurrentPositionAsync({
-              accuracy: Location.Accuracy.Balanced,
-            });
-            socketClient.emit(
-              "make-memory",
-              appEnsName,
-              appEnsAvatar,
-              wallets.userWallets[0].address,
-              pendingEns,
-              pendingAvatar,
-              pendingAddress,
-              location.coords
-            );
-            setPendingCreate(false);
-            setPendingEns("");
-            setPendingAvatar("");
-            setPendingAddress("");
-          }}
-        />
+      {wallets.userWallets.length > 0 ? (
+        <HomeScreen />
+      ) : (
+        <>
+          <View
+            style={{
+              alignItems: "center",
+              width: "100%",
+              height: "60%",
+              paddingBottom: 120,
+            }}
+          >
+            <Image
+              source={require("./assets/nftap.png")}
+              style={{ width: "100%", height: "100%" }}
+            />
+          </View>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => dynamicClient.ui.auth.show()}
+          >
+            <Text style={styles.text}>Sign In</Text>
+          </TouchableOpacity>
+        </>
       )}
-      {wallets.userWallets.length > 0 && (
-        <EnsRecord
-          setAppEnsName={setAppEnsName}
-          setAppEnsAvatar={setAppEnsAvatar}
-          address={wallets.userWallets[0].address as `0x${string}`}
-        />
-      )}
-      <Button
-        title="Login/logout"
-        onPress={async () => {
-          console.log("show modal");
-          await dynamicClient.ui.auth.show();
-          console.log("showed");
-        }}
-      />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -185,9 +53,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
+    backgroundColor: "#F9E7A2",
   },
   text: {
     textAlign: "center",
+    color: "#645e4e",
+    fontSize: 28,
+    fontWeight: "700",
   },
   buttonContainer: {
     flexDirection: "row",
@@ -195,11 +67,17 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   button: {
-    flex: 1,
-    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#eee",
-    padding: 10,
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+    marginHorizontal: 64,
+    borderRadius: 8,
+    elevation: 3,
+    backgroundColor: "#fff9e8",
+    borderColor: "#645e4e",
+    borderWidth: 4,
+    marginBottom: 200,
   },
   middleButton: {
     borderLeftWidth: 1,
