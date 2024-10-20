@@ -10,8 +10,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "axios": "^1.7.7",
     "dotenv": "^16.4.5",
     "node-geocoder": "^4.4.0",
+    "openai": "^4.68.1",
     "socket.io": "^4.8.0"
   }
 }

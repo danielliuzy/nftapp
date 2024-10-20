@@ -1,8 +1,14 @@
 import { Server } from "socket.io";
 import NodeGeocoder from "node-geocoder";
 import { config } from "dotenv";
+import OpenAI from "openai";
+import axios from "axios";
+import http from "http";
+
+config();
 
 const io = new Server(3000);
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 let pendingEns = "";
 let pendingAvatar = "";
@@ -10,7 +16,19 @@ let pendingLocation = { latitude: 0, longitude: 0 };
 let shakeResponseLocations = [];
 let pendingSockets = new Map();
 
-config();
+const getTimeOfDay = (hours) => {
+  let timeOfDay = "";
+  if (hours >= 5 && hours < 12) {
+    timeOfDay = "morning";
+  } else if (hours >= 12 && hours < 17) {
+    timeOfDay = "afternoon";
+  } else if (hours >= 17 && hours < 21) {
+    timeOfDay = "evening";
+  } else {
+    timeOfDay = "night";
+  }
+  return timeOfDay;
+};
 
 const options = {
   provider: "google", // Choose your preferred provider (e.g., Google, Mapbox, etc.)
@@ -94,5 +112,65 @@ io.on("connection", (socket) => {
     // get location/landmark
     // generate image based on the 3 things above
     const [{ city, country }] = await geocoder.reverse({ lat, lon });
+    const locale = `${city}, ${country}`;
+    const params = {
+      key: process.env.WEATHER_API_KEY,
+      q: `${lat},${lon}`,
+    };
+    const response = await axios.get(
+      "https://api.weatherapi.com/v1/current.json",
+      { params }
+    );
+    const condition = response.data.current.condition;
+
+    const describePrompt =
+      "describe this image for an image generator as a character in a brief sentence. include some details";
+    const avatar1Response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: describePrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: avatar1,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const avatar1Description = avatar1Response.choices[0].message.content;
+    const avatar2Response = await openai.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        {
+          role: "user",
+          content: [
+            { type: "text", text: describePrompt },
+            {
+              type: "image_url",
+              image_url: {
+                url: avatar2,
+              },
+            },
+          ],
+        },
+      ],
+    });
+    const avatar2Description = avatar2Response.choices[0].message.content;
+    const now = new Date();
+    const hours = now.getHours();
+    const timeOfDay = getTimeOfDay(hours);
+
+    const imageResponse = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: `Character 1:'${avatar1Description}'. Character 2:'${avatar2Description}'. The 2 characters are hanging out together happily in ${locale} on a ${condition} ${timeOfDay}. There is no text in the image. 3d cartoony style. Have landmark(s) of the location in the background`,
+      n: 1,
+      size: "1024x1024",
+    });
+    const imageUrl = imageResponse.data[0].url;
   });
 });
