@@ -3,12 +3,14 @@ import { Server } from "socket.io";
 const io = new Server(3000);
 
 let pendingEns = "";
+let pendingAvatar = "";
 let pendingLocation = { latitude: 0, longitude: 0 };
 let shakeResponseLocations = [];
 
 io.on("connection", (socket) => {
-  socket.on("shake", (ens, location) => {
+  socket.on("shake", (ens, avatar, location) => {
     pendingEns = ens;
+    pendingAvatar = avatar;
     pendingLocation.latitude = location.latitude;
     pendingLocation.longitude = location.longitude;
     console.log(location);
@@ -46,8 +48,19 @@ io.on("connection", (socket) => {
               return response;
             }
           }, null);
-        console.log(closestResponse);
+        if (closestResponse != null) {
+          socket.emit("exchange-ens", {
+            ens: closestResponse.ens,
+            avatar: closestResponse.avatar,
+          });
+          io.to(closestResponse.id).emit("exchange-ens", {
+            ens: pendingEns,
+            avatar: pendingAvatar,
+          });
+        }
 
+        pendingEns = "";
+        pendingAvatar = "";
         shakeResponseLocations = [];
       });
   });

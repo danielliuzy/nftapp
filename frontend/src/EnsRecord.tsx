@@ -1,15 +1,19 @@
-import { Image, View, Text } from "react-native";
-import { normalize } from "viem/ens";
-import { useEnsAvatar, useEnsName, useEnsText } from "wagmi";
-import { publicClient } from "./client";
 import { useEffect, useState } from "react";
+import { Image, Text, View } from "react-native";
+import { normalize } from "viem/ens";
+import { publicClient } from "./client";
 
 type Props = {
   address: `0x${string}`;
   setAppEnsName: (ensName: string) => void;
+  setAppEnsAvatar: (ensAvatar: string) => void;
 };
 
-export default function EnsRecord({ address, setAppEnsName }: Props) {
+export default function EnsRecord({
+  address,
+  setAppEnsName,
+  setAppEnsAvatar,
+}: Props) {
   console.log(address);
   const [ensName, setEnsName] = useState("");
   const [ensAvatar, setEnsAvatar] = useState("");
@@ -26,6 +30,7 @@ export default function EnsRecord({ address, setAppEnsName }: Props) {
         const avatar = await publicClient.getEnsAvatar({ name });
         if (avatar) {
           setEnsAvatar(avatar);
+          setAppEnsAvatar(avatar);
         }
         const description = await publicClient.getEnsText({
           name,
