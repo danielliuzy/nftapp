@@ -6,6 +6,7 @@ let pendingEns = "";
 let pendingAvatar = "";
 let pendingLocation = { latitude: 0, longitude: 0 };
 let shakeResponseLocations = [];
+let pendingSockets = new Map();
 
 io.on("connection", (socket) => {
   socket.on("shake", (ens, avatar, location) => {
@@ -16,7 +17,7 @@ io.on("connection", (socket) => {
     console.log(location);
     console.log("broadcast to other sockets for closest connection");
     socket.broadcast
-      .timeout(1000)
+      .timeout(3000)
       .emit("pending-location", (err, responses) => {
         if (err) {
           console.log("did not get response");
@@ -32,7 +33,7 @@ io.on("connection", (socket) => {
             const longitudeDelta = Math.abs(
               location.longitude - pendingLocation.longitude
             );
-            return latitudeDelta < 0.0005 && longitudeDelta < 0.0005;
+            return latitudeDelta < 0.00016875 && longitudeDelta < 0.00016875;
           })
           .reduce((acc, response) => {
             if (acc) {
@@ -57,11 +58,21 @@ io.on("connection", (socket) => {
             ens: pendingEns,
             avatar: pendingAvatar,
           });
+          pendingSockets[closestResponse.ens] = closestResponse.id;
+          pendingSockets[pendingEns] = socket.id;
         }
 
         pendingEns = "";
         pendingAvatar = "";
         shakeResponseLocations = [];
       });
+  });
+
+  socket.on("make-memory", (ens1, avatar1, ens2, avatar2, location) => {
+    // ens 1 is owner;
+    delete pendingSockets[ens1];
+
+    io.to(pendingSockets[ens2]).emit("pending-end");
+    delete pendingSockets[ens2];
   });
 });
